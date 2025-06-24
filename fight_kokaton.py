@@ -5,10 +5,14 @@ import time
 import pygame as pg
 
 
+
+
 WIDTH = 1100  # ゲームウィンドウの幅
 HEIGHT = 650  # ゲームウィンドウの高さ
 NUM_OF_BOMBS=5
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+
 
 
 def check_bound(obj_rct: pg.Rect) -> tuple[bool, bool]:
@@ -110,6 +114,11 @@ class Beam:
 
 class Score:
    def __init__(self):
+        """
+        フォントの設定
+        スコアの初期値の設定
+        文字の中心座標を設定
+        """
         self.fonto = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30)
         self.color = (0, 0, 255)
         self.value = 0
@@ -141,6 +150,7 @@ class Bomb:
         """
         爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
         引数 screen：画面Surface
+        画面外に出たら反転させる
         """
         yoko, tate = check_bound(self.rct)
         if not yoko:
@@ -152,6 +162,9 @@ class Bomb:
 
 
 def main():
+    """
+    ゲームのメイン関数
+    """
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
     bg_img = pg.image.load("fig/pg_bg.jpg")
