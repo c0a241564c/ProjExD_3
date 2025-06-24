@@ -171,6 +171,7 @@ def main():
                 if beam.rct.colliderect(bomb.rct):
                     beam = None
                     bomb = None
+                    bird.change_img(6, screen)  # ビームが爆弾に当たったらこうかとん画像を切り替え
         
 
         key_lst = pg.key.get_pressed()
