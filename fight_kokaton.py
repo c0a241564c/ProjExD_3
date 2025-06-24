@@ -17,12 +17,12 @@ def check_bound(obj_rct: pg.Rect) -> tuple[bool, bool]:
     引数：こうかとんや爆弾，ビームなどのRect
     戻り値：横方向，縦方向のはみ出し判定結果（画面内：True／画面外：False）
     """
-    yoko, tate = True, True
+    y, t = True, True
     if obj_rct.left < 0 or WIDTH < obj_rct.right:
-        yoko = False
+        y = False
     if obj_rct.top < 0 or HEIGHT < obj_rct.bottom:
-        tate = False
-    return yoko, tate
+        t = False
+    return y, t
 
 
 class Bird:
@@ -88,14 +88,14 @@ class Beam:
     """
     こうかとんが放つビームに関するクラス
     """
-    def __init__(self, bird:"Bird"):
+    def __init__(self, bird:"Bird"):  # 引数birdはBirdクラスのインスタンス
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん（Birdインスタンス）
         """
         self.img = pg.image.load(f"fig/beam.png")
         self.rct = self.img.get_rect()
-        self.rct.centery = bird.rct.centery
+        self.rct.centery = bird.rct.centery  #ビームの縦座標＝こうかとんの縦座標
         self.rct.left = bird.rct.right #ビームの左座標＝こうかとんの右座標
         self.vx, self.vy = +5, 0
 
@@ -110,15 +110,46 @@ class Beam:
 
 class Score:
    def __init__(self):
-        self.fonto = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30)
-        self.color = (0, 0, 255)
+        self.fonto = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30) 
+        self.color = (0, 0, 255)  # スコアの色
         self.value = 0
-        self.img = self.fonto.render(f"スコア: {self.value}", 0, self.color)
+        self.img = self.fonto.render(f"スコア: {self.value}", 0, self.color)  
         self.rect = self.img.get_rect()
-        self.rect.center = 100, HEIGHT-50 
+        self.rect.center = 100, HEIGHT-50   # スコアの位置
    def update(self, screen: pg.Surface):
-        self.img = self.fonto.render(f"スコア: {self.value}", 0, self.color)
-        screen.blit(self.img, self.rect)
+        self.img = self.fonto.render(f"スコア: {self.value}", 0, self.color)  
+        screen.blit(self.img, self.rect) 
+        
+         
+class Explosion:
+    """
+    爆発エフェクトに関するクラス
+    """
+    def __init__(self, center: tuple[int, int]):
+        """
+        爆発画像Surfaceを生成する
+        引数 center：爆発の中心座標
+        """
+        ex_img = pg.image.load("fig/explosion.gif")  #爆発gifを読み込む
+        self.imgs = [
+            ex_img,
+            pg.transform.flip(ex_img, True, False),
+            pg.transform.flip(ex_img, False, True),
+        ]
+        self.life = 30  # 爆発の表示時間
+        self.rct = self.imgs[0].get_rect()
+        self.rct.center = center
+
+
+        def update(self, screen: pg.Surface):
+            """
+            爆発画像を交互に反転表示して爆発演出
+            引数 screen：画面Surface
+            """
+        self.life -= 1  #爆発経過時間を1減算
+        img = self.imgs[self.life % len(self.imgs)]  
+        screen.blit(img, self.rct)
+
 
 class Bomb:
     """
@@ -130,8 +161,8 @@ class Bomb:
         引数1 color：爆弾円の色タプル
         引数2 rad：爆弾円の半径
         """
-        self.img = pg.Surface((2*rad, 2*rad))
-        pg.draw.circle(self.img, color, (rad, rad), rad)
+        self.img = pg.Surface((2*rad, 2*rad))  # 空のSurfaceを生成
+        pg.draw.circle(self.img, color, (rad, rad), rad)  # 円を描く
         self.img.set_colorkey((0, 0, 0))
         self.rct = self.img.get_rect()
         self.rct.center = random.randint(0, WIDTH), random.randint(0, HEIGHT)
@@ -142,11 +173,11 @@ class Bomb:
         爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
         引数 screen：画面Surface
         """
-        yoko, tate = check_bound(self.rct)
-        if not yoko:
+        y, t = check_bound(self.rct)
+        if not y:
             self.vx *= -1
-        if not tate:
-            self.vy *= -1
+        if not t:
+            self .vy *= -1
         self.rct.move_ip(self.vx, self.vy)
         screen.blit(self.img, self.rct)
 
@@ -160,6 +191,7 @@ def main():
     bomb = Bomb((255, 0, 0), 10)
     bombs=[] #  爆弾用の空のリスト
     beams=[] #  ビーム用のリスト
+    explosions = []  # Explosionインスタンス用の空のリスト
     for _ in range(NUM_OF_BOMBS):
         bombs.append(Bomb((255,0,0),10))
     #  内包表記    
@@ -168,7 +200,7 @@ def main():
     tmr = 0
     while True:
         for event in pg.event.get():
-            if event.type == pg.QUIT:
+            if event.type == pg.QUIT:  
                 return
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 # スペースキー押下でBeamクラスのインスタンス生成
@@ -178,6 +210,7 @@ def main():
         for n2,bomb2 in enumerate(bombs):
             for n,beam2 in enumerate(beams):
                 if bomb2.rct.colliderect(beam2.rct):
+                    explosions.append(Explosion(bomb.rct.center))  #爆発追加
                     bombs[n2]=None
                     beams[n]=None
                     bird.change_img(6, screen)
@@ -196,27 +229,20 @@ def main():
                 pg.display.update()
                 time.sleep(1)
                 return
-
-        # for i,bomb in enumerate(bombs):
-        #     if beam is not None:
-        #         if beam.rct.colliderect(bomb.rct): #  ビームと爆弾が衝突したら
-        #             beam=None
-        #             bombs[i]=None
-        #             bird.change_img(6, screen)
-        #             score.value+=1
         
 
         score.update(screen)
 
         key_lst = pg.key.get_pressed()
-        bird.update(key_lst, screen)
-        for i,beam in enumerate(beams):
+        bird.update(key_lst, screen)  
+        for i,beam in enumerate(beams):  # ビームの更新
             if check_bound(beam.rct)==(False,False): #  ビームが存在する時
-                del beams[i]
+                del beams[i]  # ビームが画面外に出たら削除
             else:    
                 beam.update(screen)   
-        for bomb in bombs:    
+        for bomb in bombs:  # 爆弾の更新
             bomb.update(screen)
+
         pg.display.update()
         tmr += 1
         clock.tick(50)
